@@ -65,8 +65,14 @@ jobs:
         run: |
           CONTAINER_ID=$(docker ps -qf "name=redmine")
           docker exec $CONTAINER_ID gem cleanup
-          docker exec $CONTAINER_ID rails runner \
-            "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1
+          echo "Fetching API key..."
+          API_KEY=$(docker exec $CONTAINER_ID rails runner \
+          "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1 | tr -d '\r')
+          echo "Fetched API Key: $API_KEY"
+          if [ -z "$API_KEY" ]; then
+          echo "Error: API_KEY is empty"
+          exit 1
+          fi
           echo "API_KEY=$API_KEY" >> $GITHUB_ENV
           echo "Admin API Key: $API_KEY"
 
