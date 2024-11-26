@@ -66,9 +66,9 @@ jobs:
           CONTAINER_ID=$(docker ps -qf "name=redmine")
           docker exec $CONTAINER_ID gem cleanup
           docker exec $CONTAINER_ID rails runner \
-            "user = User.find_by(login: 'admin'); if user.api_key.blank?; user.api_key = SecureRandom.hex(20); user.save!; end; puts user.api_key" > api_key.txt
-          echo "API_KEY=$(cat api_key.txt)" >> $GITHUB_ENV
-          echo "Admin API Key: $(cat api_key.txt)"
+            "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1)
+          echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+          echo "Admin API Key: $API_KEY"
 
       # Step 7: Run tests using RSpec
       - name: Run tests
