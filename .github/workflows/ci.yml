@@ -66,7 +66,7 @@ jobs:
           CONTAINER_ID=$(docker ps -qf "name=redmine")
           docker exec $CONTAINER_ID gem cleanup
           docker exec $CONTAINER_ID rails runner \
-            "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1)
+            "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1
           echo "API_KEY=$API_KEY" >> $GITHUB_ENV
           echo "Admin API Key: $API_KEY"
 
