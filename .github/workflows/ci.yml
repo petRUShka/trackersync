@@ -16,6 +16,7 @@ jobs:
     services:
       redmine:
         image: redmine:latest
+        container_name: redmine
         ports:
           - 3000:3000
         options: >-
@@ -57,8 +58,8 @@ jobs:
       # Step 5: Initialize Redmine by running database migrations and loading default data
       - name: Initialize Redmine
         run: |
-          docker exec redmine rake db:migrate RAILS_ENV=production # Run database migrations
-          docker exec redmine rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en # Load default Redmine data with English language
+          docker exec $(docker ps -qf "name=redmine") rake db:migrate RAILS_ENV=production
+          docker exec $(docker ps -qf "name=redmine") rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en
 
       # Step 6: Create an admin user and generate an API key for tests
       - name: Create admin user and get API key
