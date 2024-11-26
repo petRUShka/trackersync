@@ -63,8 +63,10 @@ jobs:
       # Step 6: Create an admin user and generate an API key for tests
       - name: Create admin user and get API key
         run: |
-          CONTAINER_ID=$(docker ps -qf "name=redmine") # Получаем ID контейнера
-          docker exec $CONTAINER_ID rails runner "user = User.find_by(login: 'admin'); user.password = 'password'; user.password_confirmation = 'password'; user.generate_api_key; user.save!; puts user.api_key" > api_key.txt
+          CONTAINER_ID=$(docker ps -qf "name=redmine")
+          docker exec $CONTAINER_ID gem cleanup
+          docker exec $CONTAINER_ID rails runner \
+            "user = User.find_by(login: 'admin'); user.password = 'password'; user.password_confirmation = 'password'; user.api_key = Token::API.create!(user: user, action: 'api').value; user.save!; puts user.api_key" > api_key.txt
           echo "API_KEY=$(cat api_key.txt)" >> $GITHUB_ENV
 
       # Step 7: Run tests using RSpec
