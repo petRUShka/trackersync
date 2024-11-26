@@ -15,14 +15,14 @@ jobs:
     # Define services required for the workflow
     services:
       redmine:
-        image: redmine:latest # Use the latest version of the Redmine container
+        image: redmine:latest
         ports:
-          - 3000:3000 # Map container's port 3000 to host's port 3000
+          - 3000:3000
         options: >-
-          --health-cmd='curl -f http://localhost:3000/ || exit 1'
-          --health-interval=10s # Check every 10 seconds
-          --health-timeout=5s   # Timeout after 5 seconds
-          --health-retries=5    # Retry 5 times before marking as unhealthy
+          --health-cmd="curl -fs http://localhost:3000/ || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       # Step 1: Checkout the code from the repository
