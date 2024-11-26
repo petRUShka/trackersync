@@ -16,7 +16,6 @@ jobs:
     services:
       redmine:
         image: redmine:latest
-        container_name: redmine
         ports:
           - 3000:3000
         options: >-
