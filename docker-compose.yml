@@ -1,0 +1,14 @@
+services:
+  redmine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: redmine_test:latest
+    ports:
+      - '3000:3000'
+    entrypoint: /usr/src/redmine/entrypoint.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

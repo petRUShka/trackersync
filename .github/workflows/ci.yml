@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Define services required for the workflow
+    services:
+      redmine:
+        image: redmine:latest
+        ports:
+          - 3000:3000
+        options: >-
+          --health-cmd="curl -fs http://localhost:3000/ || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # Step 1: Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Ruby environment
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3
+
+      # Step 3: Install dependencies specified in the Gemfile
+      - name: Install dependencies
+        run: |
+          bundle install --jobs 4 --retry 3 # Use 4 jobs and retry up to 3 times if installation fails
+
+      # Step 4: Wait for Redmine to be ready
+      - name: Wait for Redmine to be healthy
+        run: |
+          for i in {1..30}; do
+            # Check the health status of the Redmine container
+            if [ "$(docker inspect --format='{{json .State.Health.Status}}' $(docker ps -qf "name=redmine"))" == "\"healthy\"" ]; then
+              echo "Redmine is healthy"
+              break # Exit the loop if Redmine is healthy
+            else
+              echo "Waiting for Redmine to be healthy..."
+              sleep 10 # Wait 10 seconds before checking again
+            fi
+          done
+
+      # Step 5: Initialize Redmine by running database migrations and loading default data
+      - name: Initialize Redmine
+        run: |
+          docker exec $(docker ps -qf "name=redmine") rake db:migrate RAILS_ENV=production
+          docker exec $(docker ps -qf "name=redmine") rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en
+
+      # Step 6: Find admin user and generate an API key
+      - name: Create admin user and get API key
+        run: |
+          CONTAINER_ID=$(docker ps -qf "name=redmine")
+          docker exec $CONTAINER_ID gem cleanup
+          echo "Fetching API key..."
+          API_KEY=$(docker exec $CONTAINER_ID rails runner \
+          "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1 | tr -d '\r')
+          echo "Fetched API Key: $API_KEY"
+          if [ -z "$API_KEY" ]; then
+          echo "Error: API_KEY is empty"
+          exit 1
+          fi
+          echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+          echo "Admin API Key: $API_KEY"
+
+      # Step 7: Run tests using RSpec
+      - name: Run tests
+        env:
+          API_KEY: ${{ env.REDMINE_API_KEY }}
+        run: bundle exec rspec
