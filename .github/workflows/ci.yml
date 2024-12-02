@@ -1,10 +1,10 @@
 name: CI
 
 on:
-  push: # Trigger workflow on any push
+  push:
     branches:
-      - '*' # Runs for all branches
-  pull_request: # Trigger workflow on pull requests targeting the main branch
+      - '*'
+  pull_request:
     branches:
       - main
 
@@ -33,7 +33,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3 # Specify the Ruby version
+          ruby-version: 3.3
 
       # Step 3: Install dependencies specified in the Gemfile
       - name: Install dependencies
@@ -60,7 +60,7 @@ jobs:
           docker exec $(docker ps -qf "name=redmine") rake db:migrate RAILS_ENV=production
           docker exec $(docker ps -qf "name=redmine") rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en
 
-      # Step 6: Create an admin user and generate an API key for tests
+      # Step 6: Find admin user and generate an API key
       - name: Create admin user and get API key
         run: |
           CONTAINER_ID=$(docker ps -qf "name=redmine")
@@ -79,5 +79,5 @@ jobs:
       # Step 7: Run tests using RSpec
       - name: Run tests
         env:
-          API_KEY: ${{ env.API_KEY }} # Pass the API key to the tests as an environment variable
-        run: bundle exec rspec # Execute the RSpec test suite
+          API_KEY: ${{ env.REDMINE_API_KEY }}
+        run: bundle exec rspec

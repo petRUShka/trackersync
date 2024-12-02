@@ -2,6 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     diff-lcs (1.5.1)
+    dotenv (3.1.4)
     net-http (0.4.1)
       uri
     rspec (3.13.0)
@@ -24,6 +25,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  dotenv
   net-http
   rspec
 
