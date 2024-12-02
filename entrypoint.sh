@@ -11,20 +11,16 @@ echo "Redmine is ready!"
 
 bundle exec rails runner - <<-RUBY
   admin = User.find_by(login: 'admin')
-  if admin
-    admin.password = 'password'
-    admin.password_confirmation = 'password'
+  admin.password = 'password'
+  admin.password_confirmation = 'password'
+  admin.save!
+
+  if admin.api_key.nil?
+    admin.api_key = User.generate_api_key
     admin.save!
-
-    if admin.api_key.nil?
-      admin.api_key = User.generate_api_key
-      admin.save!
-    end
-
-    puts "Admin API Key: #{admin.api_key}"
-  else
-    raise 'Admin not found'
   end
+
+  puts "Admin API Key: #{admin.api_key}"
 
   project = Project.find_or_create_by(name: 'Test Project', identifier: 'test-project')
 
