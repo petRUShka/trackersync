@@ -1,4 +1,4 @@
 require 'spec_helper'
 
-RSpec.describe 'Redmine API', type: :request do
+RSpec.describe 'Redmine API' do
 end

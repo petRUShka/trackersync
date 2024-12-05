@@ -1,5 +1,8 @@
 source 'https://rubygems.org'
 
 gem 'dotenv'
-gem 'rspec'
-gem 'net-http'
+
+group :test do
+  gem 'rspec'
+  gem 'rest-client'
+end

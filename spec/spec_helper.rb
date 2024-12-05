@@ -1,3 +1,3 @@
 require 'dotenv/load'
-require 'net/http'
+require 'rest-client'
 require 'json'
