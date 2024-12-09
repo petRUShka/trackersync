@@ -45,22 +45,29 @@ bundle exec rails runner - <<-RUBY
       puts project.errors.full_messages
     end
 
-    user = User.new(
-      login: 'testuser',
-      firstname: 'Test',
-      lastname: 'User',
-      mail: 'user@example.com',
-      password: 'password',
-      password_confirmation: 'password'
-    )
-    user.admin = false
-    user.status = User::STATUS_ACTIVE
+    user = User.find_by(login: 'testuser')
 
-    if user.save
-      puts 'Test user created successfully.'
+    if user
+      puts 'Test user already exists.'
     else
-      puts 'Failed to create test user'
-      puts user.errors.full_messages
+      user = User.new(
+        login: 'testuser',
+        firstname: 'Test',
+        lastname: 'User',
+        mail: 'user@example.com',
+        password: 'password',
+        password_confirmation: 'password'
+      )
+      user.admin = false
+      user.status = User::STATUS_ACTIVE
+
+      if user.save
+        puts 'Test user created successfully.'
+      else
+        puts 'Failed to create test user'
+        puts user.errors.full_messages
+        exit 1
+      end
     end
 
     if user.api_key.nil?
