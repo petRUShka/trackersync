@@ -75,9 +75,12 @@ jobs:
           fi
           echo "API_KEY=$API_KEY" >> $GITHUB_ENV
           echo "Admin API Key: $API_KEY"
+          echo "REDMINE_API_KEY=$API_KEY" >> $GITHUB_ENV
+          echo "REDMINE_URL=http://localhost:3000" >> $GITHUB_ENV
 
       # Step 7: Run tests using RSpec
       - name: Run tests
         env:
-          API_KEY: ${{ env.REDMINE_API_KEY }}
+          REDMINE_API_KEY: ${{ env.REDMINE_API_KEY }}
+          REDMINE_URL: ${{ env.REDMINE_URL }}
         run: bundle exec rspec

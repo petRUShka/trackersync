@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RedmineHelpers
   def redmine_url
     ENV.fetch('REDMINE_URL', 'http://localhost:3000')
