@@ -11,19 +11,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    # Define services required for the workflow
-    services:
-      redmine:
-        image: redmine:latest
-        ports:
-          - 3000:3000
-        options: >-
-          --health-cmd="curl -fs http://localhost:3000/ || exit 1"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       # Step 1: Checkout the code from the repository
       - name: Checkout code
@@ -33,51 +20,44 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3
+          ruby-version: '3.3'
 
-      # Step 3: Install dependencies specified in the Gemfile
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
-          bundle install --jobs 4 --retry 3 # Use 4 jobs and retry up to 3 times if installation fails
+          bundle install --jobs 4 --retry 3
 
-      # Step 4: Wait for Redmine to be ready
+      # Шаг 4: Build Redmine
+      - name: Build Redmine image
+        run: |
+          docker build -t redmine_test:latest .
+
+      # Шаг 5: Run Redmine
+      - name: Run Redmine container
+        run: |
+          docker run -d --name redmine_test -p 3000:3000 redmine_test:latest
+
+      # Шаг 6: Wait for Redmine ready
       - name: Wait for Redmine to be healthy
         run: |
           for i in {1..30}; do
-            # Check the health status of the Redmine container
-            if [ "$(docker inspect --format='{{json .State.Health.Status}}' $(docker ps -qf "name=redmine"))" == "\"healthy\"" ]; then
+            if curl -fs http://localhost:3000/ > /dev/null; then
               echo "Redmine is healthy"
-              break # Exit the loop if Redmine is healthy
+              break
             else
               echo "Waiting for Redmine to be healthy..."
-              sleep 10 # Wait 10 seconds before checking again
+              sleep 10
             fi
           done
 
-      # Step 5: Initialize Redmine by running database migrations and loading default data
-      - name: Initialize Redmine
+      # Шаг 7: Fetch variables
+      - name: Get Admin API key
         run: |
-          docker exec $(docker ps -qf "name=redmine") rake db:migrate RAILS_ENV=production
-          docker exec $(docker ps -qf "name=redmine") rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en
-
-      # Step 6: Find admin user and generate an API key
-      - name: Create admin user and get API key
-        run: |
-          CONTAINER_ID=$(docker ps -qf "name=redmine")
-          docker exec $CONTAINER_ID gem cleanup
-          echo "Fetching API key..."
-          API_KEY=$(docker exec $CONTAINER_ID rails runner \
-          "user = User.find_by(login: 'admin'); puts user.api_key" | tail -n 1 | tr -d '\r')
-          echo "Fetched API Key: $API_KEY"
-          if [ -z "$API_KEY" ]; then
-          echo "Error: API_KEY is empty"
-          exit 1
-          fi
-          echo "Admin API Key: $API_KEY"
-          echo "REDMINE_API_KEY=$API_KEY" >> $GITHUB_ENV
+          KEY=$(docker exec redmine_test rails runner "puts User.find_by(login: 'admin').api_key")
+          echo "REDMINE_API_KEY=$KEY" >> $GITHUB_ENV
           echo "REDMINE_URL=http://localhost:3000" >> $GITHUB_ENV
 
-      # Step 7: Run tests using RSpec
+      # Шаг 8: Run tests
       - name: Run tests
         env:
           REDMINE_API_KEY: ${{ env.REDMINE_API_KEY }}
