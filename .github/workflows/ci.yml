@@ -12,64 +12,45 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the code from the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Ruby environment
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-
-      # Step 3: Install dependencies
-      - name: Install dependencies
+      - name: Set up Docker
         run: |
-          bundle install --jobs 4 --retry 3
+          docker build -t custom_redmine:latest .
 
-      # Шаг 4: Build Redmine
-      - name: Build Redmine image
-        run: |
-          docker build -t redmine_test:latest .
-
-      # Шаг 5: Run Redmine
       - name: Run Redmine container
         run: |
-          docker run -d --name redmine_test -p 3000:3000 redmine_test:latest
+          docker run -d --name redmine_test -p 3000:3000 custom_redmine:latest
 
-      # Шаг 6: Wait for Redmine ready
-      - name: Wait for Redmine to be healthy
+      - name: Wait for Redmine to be ready
         run: |
           for i in {1..30}; do
             if curl -fs http://localhost:3000/ > /dev/null; then
-              echo "Redmine is healthy"
+              echo "Redmine is ready"
               break
             else
-              echo "Waiting for Redmine to be healthy..."
+              echo "Waiting for Redmine to be ready..."
               sleep 10
             fi
           done
 
-      # Шаг 7: Fetch variables
-      - name: Get Admin API key
+      - name: Fetch API Key and URL
         run: |
-          KEY=$(docker exec redmine_test rails runner "puts User.find_by(login: 'testuser').api_key" 2>/dev/null | tail -n 1 | tr -d '\r\n')
-
+          echo "Fetching API Key and URL from logs..."
+          KEY=$(docker logs redmine_test 2>&1 | grep "Admin API Key:" | awk -F': ' '{print $2}')
           if [ -z "$KEY" ]; then
-            echo "Could not retrieve Admin API Key!"
+            echo "Failed to retrieve Admin API Key"
             exit 1
           fi
-          
-          echo "Got KEY: $KEY"
+          echo "Admin API Key: $KEY"
           echo "REDMINE_API_KEY=$KEY" >> $GITHUB_ENV
           echo "REDMINE_URL=http://localhost:3000" >> $GITHUB_ENV
 
-      # Шаг 8: Run tests
       - name: Run tests
         env:
           REDMINE_API_KEY: ${{ env.REDMINE_API_KEY }}
           REDMINE_URL: ${{ env.REDMINE_URL }}
         run: |
-          echo "REDMINE_API_KEY during tests: $REDMINE_API_KEY"
-          echo "REDMINE_URL during tests: $REDMINE_URL"
+          echo "Running tests with API Key: $REDMINE_API_KEY"
           bundle exec rspec
