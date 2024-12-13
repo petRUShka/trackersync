@@ -53,7 +53,13 @@ jobs:
       # Шаг 7: Fetch variables
       - name: Get Admin API key
         run: |
-          KEY=$(docker exec redmine_test rails runner "puts User.find_by(login: 'admin').api_key")
+          KEY=$(docker exec redmine_test rails runner "puts User.find_by(login: 'testuser').api_key" 2>/dev/null | tail -n 1 | tr -d '\r\n')
+
+          if [ -z "$KEY" ]; then
+            echo "Could not retrieve Admin API Key!"
+            exit 1
+          fi
+
           echo "REDMINE_API_KEY=$KEY" >> $GITHUB_ENV
           echo "REDMINE_URL=http://localhost:3000" >> $GITHUB_ENV
 
