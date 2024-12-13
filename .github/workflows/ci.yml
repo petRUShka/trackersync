@@ -59,7 +59,8 @@ jobs:
             echo "Could not retrieve Admin API Key!"
             exit 1
           fi
-
+          
+          echo "Got KEY: $KEY"
           echo "REDMINE_API_KEY=$KEY" >> $GITHUB_ENV
           echo "REDMINE_URL=http://localhost:3000" >> $GITHUB_ENV
 
@@ -68,4 +69,7 @@ jobs:
         env:
           REDMINE_API_KEY: ${{ env.REDMINE_API_KEY }}
           REDMINE_URL: ${{ env.REDMINE_URL }}
-        run: bundle exec rspec
+        run: |
+          echo "REDMINE_API_KEY during tests: $REDMINE_API_KEY"
+          echo "REDMINE_URL during tests: $REDMINE_URL"
+          bundle exec rspec
