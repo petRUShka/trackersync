@@ -63,7 +63,4 @@ jobs:
           REDMINE_URL: ${{ env.REDMINE_URL }}
         run: |
           echo "Running tests with API Key: $REDMINE_API_KEY"
-          gem install bundler
-          bundle install --jobs 4 --retry 3
-          bundle exec rspec
           bundle exec rspec
