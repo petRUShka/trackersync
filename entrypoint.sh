@@ -100,4 +100,6 @@ bundle exec rails runner - <<-RUBY
   end
 RUBY
 
+touch /tmp/redmine_ready
+
 wait

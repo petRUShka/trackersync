@@ -23,14 +23,15 @@ jobs:
         run: |
           docker run -d --name redmine_test -p 3000:3000 custom_redmine:latest
 
-      - name: Wait for Redmine to be ready
+      - name: Wait for entrypoint to complete
         run: |
+          echo "Waiting for entrypoint to finish..."
           for i in {1..30}; do
-            if curl -fs http://localhost:3000/ > /dev/null; then
-              echo "Redmine is ready"
+            if docker exec redmine_test test -f /tmp/redmine_ready; then
+              echo "Entrypoint completed successfully!"
               break
             else
-              echo "Waiting for Redmine to be ready..."
+              echo "Waiting for entrypoint to complete..."
               sleep 10
             fi
           done
