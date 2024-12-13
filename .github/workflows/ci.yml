@@ -9,10 +9,58 @@ on:
       - main
 
 jobs:
-  dummy_job:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Dummy Step
-        run: echo "This is a dummy CI/CD pipeline."
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install dependencies
+        run: |
+          bundle install --jobs 4 --retry 3
+
+      - name: Set up Docker
+        run: |
+          docker build -t custom_redmine:latest .
+
+      - name: Run Redmine container
+        run: |
+          docker run -d --name redmine_test -p 3000:3000 custom_redmine:latest
+
+      - name: Wait for entrypoint to complete
+        run: |
+          echo "Waiting for entrypoint to finish..."
+          for i in {1..30}; do
+            if docker exec redmine_test test -f /tmp/redmine_ready; then
+              echo "Entrypoint completed successfully!"
+              break
+            else
+              echo "Waiting for entrypoint to complete..."
+              sleep 10
+            fi
+          done
+
+      - name: Fetch API Key and URL
+        run: |
+          echo "Fetching API Key and URL from logs..."
+          KEY=$(docker logs redmine_test 2>&1 | grep "Test User API Key:" | awk -F': ' '{print $2}')
+          if [ -z "$KEY" ]; then
+            echo "Failed to retrieve Admin API Key"
+            exit 1
+          fi
+          echo "Test User API Key: $KEY"
+          echo "REDMINE_API_KEY=$KEY" >> $GITHUB_ENV
+          echo "REDMINE_URL=http://localhost:3000" >> $GITHUB_ENV
+
+      - name: Run tests
+        env:
+          REDMINE_API_KEY: ${{ env.REDMINE_API_KEY }}
+          REDMINE_URL: ${{ env.REDMINE_URL }}
+        run: |
+          echo "Running tests with API Key: $REDMINE_API_KEY"
+          bundle exec rspec
